@@ -1,0 +1,125 @@
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    
+    <bean id="_object_Export" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Export _object_ to CSV.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+
+                <entry key="dataAccess.name" value="./export/_folder_/_file_" />
+                <entry key="dataAccess.type" value="csvWrite" />
+                <entry key="process.operation" value="extract" />
+                <entry key="process.lastRunOutputDirectory" value="./export/_folder_/log/_object_" />
+                <entry key="process.statusOutputDirectory" value="./export/_folder_/log/_object_" />
+                <entry key="sfdc.entity" value="_object_" />
+                <entry key="sfdc.extractionSOQL" value="_soql_" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="_object_Upsert" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Upsert to _object_.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+
+                <entry key="dataAccess.type" value="csvRead" />
+                <entry key="dataAccess.name" value="_csv_" />
+                <entry key="process.operation" value="upsert" />
+                <entry key="process.mappingFile" value="_sdl_" />
+                <entry key="process.lastRunOutputDirectory" value="./upsert/_folder_/log" />
+                <entry key="process.statusOutputDirectory" value="./upsert/_folder_/log" />
+                <entry key="sfdc.externalIdField" value="_externalId_" />
+                <entry key="sfdc.entity" value="_object_" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="_object_Delete" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Delete _object_.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+                
+                <entry key="dataAccess.type" value="csvRead" />
+                <entry key="dataAccess.name" value="_csv_" />
+                <entry key="process.operation" value="delete" />
+                <entry key="process.mappingFile" value="_sdl_" />
+                <entry key="process.lastRunOutputDirectory" value="./delete/_folder_/log" />
+                <entry key="process.statusOutputDirectory" value="./delete/_folder_/log" />
+                <entry key="sfdc.entity" value="_object_" />
+            </map>
+        </property>
+    </bean>
+
+    <!-- <bean id="_object_ExportAll" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>ExportAll _object_ to CSV.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+
+                <entry key="dataAccess.name" value="./export_all/_folder_/_file_" />
+                <entry key="dataAccess.type" value="csvWrite" />
+                <entry key="process.operation" value="extract_all" />
+                <entry key="process.lastRunOutputDirectory" value="./export_all/_folder_/log/_object_" />
+                <entry key="process.statusOutputDirectory" value="./export_all/_folder_/log/_object_" />
+                <entry key="sfdc.entity" value="_object_" />
+                <entry key="sfdc.extractionSOQL" value="_soql_" />
+            </map>
+        </property>
+    </bean> -->
+
+    <!-- <bean id="_object_Insert" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Insert into _object_.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+
+                <entry key="dataAccess.type" value="csvRead" />
+                <entry key="dataAccess.name" value="_csv_" />
+                <entry key="process.operation" value="insert" />
+                <entry key="process.mappingFile" value="_sdl_" />
+                <entry key="process.lastRunOutputDirectory" value="./insert/_folder_/log" />
+                <entry key="process.statusOutputDirectory" value="./insert/_folder_/log" />
+                <entry key="sfdc.entity" value="_object_" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="_object_Update" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Update to _object_.</description>
+        <property name="name" value="_object_" />
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_userName_"/>
+                <entry key="sfdc.password" value="_password_"/>
+
+                <entry key="dataAccess.type" value="csvRead" />
+                <entry key="dataAccess.name" value="_csv_" />
+                <entry key="process.operation" value="update" />
+                <entry key="process.mappingFile" value="_sdl_" />
+                <entry key="process.lastRunOutputDirectory" value="./update/_folder_/log" />
+                <entry key="process.statusOutputDirectory" value="./update/_folder_/log" />
+                <entry key="sfdc.entity" value="_object_" />
+            </map>
+        </property>
+    </bean> -->
+
+</beans>

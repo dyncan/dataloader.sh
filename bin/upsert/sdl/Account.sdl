@@ -1,0 +1,26 @@
+#Mapping values
+#Wed Jan 27 16:14:18 CST 2021
+#PERSONEMAIL=PersonEmail
+#SHIPPINGLATITUDE=ShippingLatitude
+STUDIO__R.INTEGRATION_ID__C=Studio__r\:Integration_Id__c
+#PERSONMAILINGLONGITUDE=PersonMailingLongitude
+BILLINGLATITUDE=BillingLatitude
+PERSONTITLE=PersonTitle
+#APPROVED_BY__C=Approved_By__c
+DESCRIPTION=Description
+INTEGRATION_ID__C=Integration_Id__c
+#BILLINGLONGITUDE=BillingLongitude
+#STUDIO__C=Studio__c
+#OWNERSHIP=Ownership
+#SHIPPINGCITY=ShippingCity
+#NAME=Name
+#SHIPPINGSTATE=ShippingState
+#PERSONMAILINGCOUNTRY=PersonMailingCountry
+#PERSONMAILINGLATITUDE=PersonMailingLatitude
+OWNERID=OwnerId
+FIRSTNAME=FirstName
+TYPE=Type
+SUFFIX=Suffix
+#RECORDTYPEID=RecordTypeId
+#PARENTID=ParentId
+#SHIPPINGCOUNTRY=ShippingCountry

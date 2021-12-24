@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Dataloader" default="start_export">
+
+    <property file="config.properties"/>
+    <property environment="env"/>
+    <property name="dataloader.jar" location="${user.home}/jar"/>
+    <property name="default_api_version" value="${sfdc.version}" />
+    <property name="dataloader_key_file" value="dataloader.key" />
+
+    <property name="soql_filter" value="LAST_YEAR" />
+
+    <tstamp>
+        <format property="timestamp" pattern="yyyy-MM-dd"/>
+    </tstamp>
+    
+    <!-- export -->
+    <macrodef name="dataloader">
+        <attribute name="file"/>
+        <attribute name="object"/>
+        <attribute name="csvFileName" default="All"/>
+        <attribute name="soql" default="" />
+        <attribute name="operation" />
+        <attribute name="sdl" default="" />
+        <attribute name="csv" default="" />
+        <attribute name="extid" default="" />
+        <attribute name="apiversion" default="${default_api_version}" />
+
+        <attribute name="userName"/>
+        <attribute name="password"/>
+        <attribute name="endpoint"/>
+
+        <attribute name="log.folder" default="log/@{operation}" />
+        <attribute name="log.file" default="@{log.folder}/@{object}_@{csvFileName}_${timestamp}.log" />
+
+        <sequential>
+
+            <mkdir dir="export/export_${timestamp}"/>
+            <mkdir dir="@{log.folder}"/>
+
+            <record name="@{log.file}" append="true" action="start"/>
+
+            <echo message="" />
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>Start @{operation} @{object}>>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>Current Api Version @{apiversion}>>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="" />
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>Current Operation User: [@{userName}] >>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="" />
+
+            <echo message="Exporting @{object}"/>
+            <copy 
+                file="template-process-conf.xml" 
+                tofile="process-conf.xml" 
+                overwrite="true" 
+                failonerror="true"/>
+            <replace file="process-conf.xml">
+                <replacefilter token="_object_" value="@{object}"/>
+                <replacefilter token="_soql_" value="@{soql} "/>
+                <replacefilter token="_sdl_" value="@{sdl}"/>
+                <replacefilter token="_csv_" value="@{csv}"/>
+                <replacefilter token="_externalId_" value="@{extid}"/>
+
+                <replacefilter token="_endpoint_" value="@{endpoint}"/>
+                <replacefilter token="_userName_" value="@{username}"/>
+                <replacefilter token="_password_" value="@{password}"/>
+                
+                <replacefilter token="_folder_" value="export_${timestamp}/@{object}_@{csvFileName}"/>
+                <replacefilter token="_file_" value="@{file}_@{csvFileName}_${timestamp}.csv"/>
+            </replace>
+            <java 
+                classname="com.salesforce.dataloader.process.ProcessRunner"
+                classpath="dataloader-@{apiversion}-uber.jar"
+                failonerror="true">
+                <sysproperty key="salesforce.config.dir" value="."/>
+                <arg line="process.name=@{object}@{operation}"/>
+            </java>
+            
+            <copy file="export/export_${timestamp}/@{object}_@{csvFileName}/@{file}_@{csvFileName}_${timestamp}.csv" tofile="./upsert/csv/@{file}_@{csvFileName}.csv" overwrite="true" failonerror="true"/>
+
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>@{operation} @{object} Done!>>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="log file : @{log.file}"/>
+            <record name="@{log.file}" action="stop"/>
+        </sequential>
+    </macrodef>
+
+     <!-- upsert -->
+
+    <macrodef name="upsert">
+        <attribute name="file"/>
+        <attribute name="object"/>
+        <attribute name="soql" default="" />
+        <attribute name="operation" />
+        <attribute name="sdl" default="" />
+        <attribute name="csv" default="" />
+        <attribute name="extid" default="" />
+        <attribute name="apiversion" default="${default_api_version}" />
+
+        <attribute name="userName"/>
+        <attribute name="password"/>
+        <attribute name="endpoint"/>
+
+        <attribute name="log.folder" default="log/@{operation}" />
+        <attribute name="log.file" default="@{log.folder}/@{object}_${timestamp}.log" />
+        <sequential>
+
+            <mkdir dir="upsert/upsert_${timestamp}"/>
+            <mkdir dir="@{log.folder}"/>
+
+            <record name="@{log.file}" append="true" action="start"/>
+
+            <echo message="" />
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>Start @{operation} @{object}>>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="" />
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>Current Operation User: [@{userName}] >>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="" />
+
+            <echo message="Exporting @{object}"/>
+            <copy 
+                file="template-process-conf.xml" 
+                tofile="process-conf.xml" 
+                overwrite="true" 
+                failonerror="true"/>
+            <replace file="process-conf.xml">
+                <replacefilter token="_object_" value="@{object}"/>
+                <replacefilter token="_soql_" value="@{soql}"/>
+                <replacefilter token="_sdl_" value="@{sdl}"/>
+                <replacefilter token="_csv_" value="@{csv}"/>
+                <replacefilter token="_externalId_" value="@{extid}"/>
+
+                <replacefilter token="_endpoint_" value="@{endpoint}"/>
+                <replacefilter token="_userName_" value="@{username}"/>
+                <replacefilter token="_password_" value="@{password}"/>
+
+                <replacefilter token="_folder_" value="upsert_${timestamp}/@{object}_${timestamp}"/>
+                <replacefilter token="_file_" value="@{file}_${timestamp}.csv"/>
+            </replace>
+            <java 
+                classname="com.salesforce.dataloader.process.ProcessRunner"
+                classpath="dataloader-@{apiversion}-uber.jar"
+                failonerror="true">
+                <sysproperty key="salesforce.config.dir" value="."/>
+                <arg line="process.name=@{object}@{operation}"/>
+            </java>
+
+            <echo message=">>>>>>>>>>>>>>>>>>>>>>@{operation} @{object} Done!>>>>>>>>>>>>>>>>>>>>>>"/>
+            <echo message="log file : @{log.file}"/>
+            <record name="@{log.file}" action="stop"/>
+        </sequential>
+    </macrodef>
+    
+    <macrodef name="set-property">
+        <attribute name="name" />
+        <attribute name="if-property-isset" />
+        <attribute name="value" default="${@{if-property-isset}}" />
+
+        <sequential>
+            <condition property="@{name}" value="@{value}">
+            <and>
+                <isset property="@{if-property-isset}" />
+                <not>
+                <equals arg1="${@{if-property-isset}}" arg2="" />
+                </not>
+            </and>
+            </condition>
+        </sequential>
+    </macrodef>
+
+    <target name="init">
+        <set-property name="api_version" if-property-isset="apiversion" />
+        <property name="api_version" value="${default_api_version}" />
+        <property name="dataloader.fullpath" location="${dataloader.jar}/dataloader-${api_version}-uber.jar"/>
+        <mkdir dir="${dataloader.jar}"/>
+        <get src="https://github.com/dyncan/dataloader-jar/raw/main/dataloader-${api_version}-uber.jar" dest="${dataloader.fullpath}" verbose="true" usetimestamp="true"/>
+
+        <copy file="${dataloader.jar}/dataloader-${api_version}-uber.jar" tofile="dataloader-${api_version}-uber.jar" overwrite="true" failonerror="true"/>
+    </target>
+
+    <target name="finish">
+        <echo message="Copy the generated encrypted password and set sfdc.password in config.properties."/>
+    </target>
+
+    <target name="encrypt" depends="generate_key">
+        <!-- ant encrypt -Dpassword=your_password -Dapiversion=50-->
+        <sequential>
+            <java fork="true" classname="com.salesforce.dataloader.security.EncryptionUtil" classpath="${dataloader.fullpath}">
+                <arg line="-e ${password} ${dataloader_key_file}"/>
+            </java>
+            <antcall target="finish" />
+        </sequential>
+    </target>
+
+    <target name="check_key_file_exist">
+        <available file="${dataloader_key_file}" property="dataloader_key_file_exist"/>
+    </target>
+
+    <!-- Generate keyfile with optional keyfile path -->
+    <target name="generate_key" depends="init, check_key_file_exist" unless="dataloader_key_file_exist">
+        <sequential>
+            <java fork="true" classname="com.salesforce.dataloader.security.EncryptionUtil" classpath="${dataloader.fullpath}">
+                <arg line="-k ${dataloader_key_file}"/>
+            </java>
+        </sequential>
+    </target>
+
+    <target name="start_export" >
+        <!-- ant start_export -Dsobject_name=User -Dsoql="select id,name from user limit 100" -Dapiversion=50 -->
+        <dataloader file="${sobject_name}" 
+                    object="${sobject_name}" 
+                    csvFileName="${csv_file_name}"
+                    soql="${soql}" 
+                    operation="Export" 
+                    apiversion="${apiversion}" 
+                    userName="${sf.sandbox.username}"
+                    password="${sfdc.password}"
+                    endpoint="${sf.sandbox.endpoint}" 
+        />
+    </target>
+
+    <target name="upsert" >
+        <!-- ant upsert -Dsobject_name=you_test_object__c -Dsdl="./upsert/upsert.sdl" -Dcsv="./upsert/upsert.csv" -Dextid="Id or yourExtId" -Dapiversion=50 -->
+        <upsert file="${sobject_name}" 
+                object="${sobject_name}" 
+                sdl="${sdl}" csv="${csv}" 
+                extid="${extid}" 
+                operation="Upsert" 
+                apiversion="${apiversion}"   
+                userName="${sf.sandbox.username}"
+                password="${sfdc.password}"
+                endpoint="${sf.sandbox.endpoint}"    
+        />
+    </target>
+    
+
+
+    <target name="delete" >
+        <!-- ant delete -Dsobject_name=you_test_object__c -Dsdl="./delete/delete.sdl" -Dcsv="./delete/delete.csv" -Dapiversion=50 -->
+        <!-- <dataloader file="${sobject_name}" object="${sobject_name}" sdl="${sdl}" csv="${csv}" operation="Delete" apiversion="${apiversion}" /> -->
+    </target>
+
+    <target name="export_all" >
+        <!-- ant export_all -Dsobject_name=User -Dsoql="select id,name from user limit 100" -Dapiversion=50 -->
+        <!-- <dataloader file="${sobject_name}" object="${sobject_name}" soql="${soql}" operation="ExportAll" apiversion="${apiversion}" /> -->
+    </target>
+
+    <target name="insert" >
+        <!-- ant insert -Dsobject_name=you_test_object__c -Dsdl="./insert/insert.sdl" -Dcsv="./insert/insert.csv" -Dapiversion=50 -->
+        <!-- <dataloader file="${sobject_name}" object="${sobject_name}" sdl="${sdl}" csv="${csv}" operation="Insert" apiversion="${apiversion}" /> -->
+    </target>
+
+    <target name="update" >
+        <!-- ant update -Dsobject_name=you_test_object__c -Dsdl="./update/update.sdl" -Dcsv="./update/update.csv" -Dapiversion=50 -->
+        <!-- <dataloader file="${sobject_name}" object="${sobject_name}" sdl="${sdl}" csv="${csv}" operation="Update" apiversion="${apiversion}" /> -->
+    </target>
+
+</project>
