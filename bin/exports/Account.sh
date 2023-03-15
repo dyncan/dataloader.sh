@@ -1,8 +1,10 @@
 #/bin/sh
 
-apiversion=$1
+source .env
 
-ant start_export -Dsobject_name=Account -Dcsv_file_name="All" -Dsoql="select CreatedById, CreatedDate, Integration_Id__c, LastActivityDate, LastModifiedById, LastModifiedDate from Account LIMIT 1 " -Dapiversion=$apiversion
+apiversion=$SFDC_VERSION
+
+ant start_export -Dsobject_name=Account -Dcsv_file_name="All" -Dsoql="select CreatedById, CreatedDate, LastActivityDate, LastModifiedById, LastModifiedDate from Account LIMIT 1 " -Dapiversion=$apiversion
 
 if [ $? -eq 0 ]; then
     echo ">>>>>>>>>>>>>>>>>>>>> Account Export Succeed >>>>>>>>>>>>>>>>>>>>>"

@@ -1,1 +1,7 @@
 dataloader*
+.env
+export/*
+log/*
+upsert/*
+process-conf.xml
+config.properties

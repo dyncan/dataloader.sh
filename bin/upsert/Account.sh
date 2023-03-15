@@ -1,8 +1,11 @@
 #/bin/sh
 
-apiversion=50
+source .env
 
-ant upsert -Dsobject_name=Account -Dsdl="./sdl/Account.sdl" -Dcsv="../upsert/csv/Account_All.csv" -Dextid="Integration_Id__c" -Dapiversion=$apiversion
+apiversion=$SFDC_VERSION
+externalId=$SFDC_EXTERNALIDFIELD
+
+ant upsert -Dsobject_name=Account -Dsdl="./sdl/Account.sdl" -Dcsv="../upsert/csv/Account_All.csv" -Dextid=$externalId -Dapiversion=$apiversion
 
 if [ $? -eq 0 ]; then
     echo ""
