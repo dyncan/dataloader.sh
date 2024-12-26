@@ -5,3 +5,5 @@ log/*
 upsert/*
 process-conf.xml
 config.properties
+.DS_Store
+**/.DS_Store
