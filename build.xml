@@ -176,8 +176,9 @@
             location="${dataloader.jar}/dataloader-${api_version}-uber.jar" />
         <mkdir dir="${dataloader.jar}" />
         <get
-            src="https://github.com/dyncan/dataloader-jar/raw/main/dataloader-${api_version}-uber.jar"
+            src="https://gitlab.com/xyzr/dataloader-jar/-/raw/main/dataloader-${api_version}-uber.jar"
             dest="${dataloader.fullpath}" verbose="true" usetimestamp="true" />
+            
 
         <copy file="${dataloader.jar}/dataloader-${api_version}-uber.jar"
             tofile="dataloader-${api_version}-uber.jar" overwrite="true" failonerror="true" />
