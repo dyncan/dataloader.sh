@@ -1,49 +1,106 @@
-#/bin/sh
+#!/bin/bash
 
-# loading .env file
-export $(cat .env | xargs)
+# 设置错误处理
+set -e
 
+# 步骤1: 检查.env文件是否存在
+if [ ! -f .env ]; then
+    echo "错误: .env 文件不存在"
+    exit 1
+fi
+
+# 步骤2: 加载环境变量，过滤注释和空行
+export $(cat .env | grep -v '^#' | xargs)
+
+# 步骤3: 创建新的config.properties
 rm -f config.properties && touch config.properties
 
-# Write properties to config.properties file
-echo "sf.from.endpoint=$SFDC_FROM_ENDPOINT" > config.properties
-echo "sf.from.username=$SFDC_FROM_USERNAME" >> config.properties
-echo "sf.to.endpoint=$SFDC_TO_ENDPOINT" >> config.properties
-echo "sf.to.username=$SFDC_TO_USERNAME" >> config.properties
-echo "process.encryptionKeyFile=$PROCESS_ENCRYPTIONKEYFILE" >> config.properties
-echo "process.enableLastRunOutput=$PROCESS_ENABLELASTRUNOUTPUT" >> config.properties
-echo "process.enableExtractStatusOutput=$PROCESS_ENABLEEXTRACTSTATUSOUTPUT" >> config.properties
-echo "dataAccess.readUTF8=$DATAACCESS_READUTF8" >> config.properties
-echo "dataAccess.writeUTF8=$DATAACCESS_WRITEUTF8" >> config.properties
-echo "sfdc.useBulkApi=$SFDC_USEBULKAPI" >> config.properties
-echo "sfdc.timeoutSecs=$SFDC_TIMEOUTSECS" >> config.properties
-echo "sfdc.noCompression=$SFDC_NOCOMPRESSION" >> config.properties
-echo "sfdc.bulkApiCheckStatusInterval=$SFDC_BULKAPICHECKSTATUSINTERVAL" >> config.properties
-echo "sfdc.bulkApiSerialMode=$SFDC_BULKAPISERIALMODE" >> config.properties
-echo "sfdc.enableRetries=$SFDC_ENABLERETRIES" >> config.properties
-echo "sfdc.extractionRequestSize=$SFDC_EXTRACTIONREQUESTSIZE" >> config.properties
-echo "sfdc.insertNulls=$SFDC_INSERTNULLS" >> config.properties
-echo "sfdc.loadBatchSize=$SFDC_LOADBATCHSIZE" >> config.properties
-echo "sfdc.maxRetries=$SFDC_MAXRETRIES" >> config.properties
-echo "sfdc.minRetrySleepSecs=$SFDC_MINRETRYSLEEPSECS" >> config.properties
-echo "sfdc.debugMessages=$SFDC_DEBUGMESSAGES" >> config.properties
-echo "sfdc.timezone=$SFDC_TIMEZONE" >> config.properties
-echo "sfdc.externalIdField=$SFDC_EXTERNALIDFIELD" >> config.properties
-echo "sfdc.version=$SFDC_VERSION" >> config.properties
+# 步骤4: 写入基本配置
+cat << EOF > config.properties
+sf.from.endpoint=$SFDC_FROM_ENDPOINT
+sf.from.username=$SFDC_FROM_USERNAME
+sf.to.endpoint=$SFDC_TO_ENDPOINT
+sf.to.username=$SFDC_TO_USERNAME
+process.encryptionKeyFile=$PROCESS_ENCRYPTIONKEYFILE
+process.enableLastRunOutput=$PROCESS_ENABLELASTRUNOUTPUT
+process.enableExtractStatusOutput=$PROCESS_ENABLEEXTRACTSTATUSOUTPUT
+dataAccess.readUTF8=$DATAACCESS_READUTF8
+dataAccess.writeUTF8=$DATAACCESS_WRITEUTF8
+sfdc.useBulkApi=$SFDC_USEBULKAPI
+sfdc.timeoutSecs=$SFDC_TIMEOUTSECS
+sfdc.noCompression=$SFDC_NOCOMPRESSION
+sfdc.bulkApiCheckStatusInterval=$SFDC_BULKAPICHECKSTATUSINTERVAL
+sfdc.bulkApiSerialMode=$SFDC_BULKAPISERIALMODE
+sfdc.enableRetries=$SFDC_ENABLERETRIES
+sfdc.extractionRequestSize=$SFDC_EXTRACTIONREQUESTSIZE
+sfdc.insertNulls=$SFDC_INSERTNULLS
+sfdc.loadBatchSize=$SFDC_LOADBATCHSIZE
+sfdc.maxRetries=$SFDC_MAXRETRIES
+sfdc.minRetrySleepSecs=$SFDC_MINRETRYSLEEPSECS
+sfdc.debugMessages=$SFDC_DEBUGMESSAGES
+sfdc.timezone=$SFDC_TIMEZONE
+sfdc.externalIdField=$SFDC_EXTERNALIDFIELD
+sfdc.version=$SFDC_VERSION
+EOF
 
-# Encrypted passwords
-ant encrypt -Dpassword=$SFDC_FROM_PASSWORD -Dapiversion=$SFDC_VERSION > encrypt_from_password.log
-encrypt_from_password=$(sed -n '38s/.\{12\}\(.\{64\}\).*/\1/p' encrypt_from_password.log)
+# 步骤5: 函数定义 - 检查字符串是否为空
+is_empty() {
+    local var="$1"
+    [[ -z "${var// }" ]] && return 0 || return 1
+}
 
-echo "The output string of encrypt from password is: $encrypt_from_password"
-echo "sfdc.from.password=$encrypt_from_password" >> config.properties
+# 函数：从日志提取密码
+extract_password() {
+    local log_file="$1"
+    grep "\[java\]" "$log_file" | grep -v "encryption" | sed 's/.*\[java\] *//' | tr -d '[:space:]'
+}
 
+# 步骤6: 检查两个密码是否都为空
+if is_empty "$SFDC_FROM_PASSWORD" && is_empty "$SFDC_TO_PASSWORD"; then
+    echo "警告: FROM 和 TO 密码都为空，跳过加密步骤"
+    exit 0
+fi
 
-ant encrypt -Dpassword=$SFDC_TO_PASSWORD -Dapiversion=$SFDC_VERSION > encrypt_to_password.log
-encrypt_to_password=$(sed -n '38s/.\{12\}\(.\{64\}\).*/\1/p' encrypt_to_password.log)
+# 步骤7: 处理 FROM 密码
+if ! is_empty "$SFDC_FROM_PASSWORD"; then
+    echo "处理 FROM 密码..."
+    # 执行加密
+    ant encrypt -Dpassword=$SFDC_FROM_PASSWORD -Dapiversion=$SFDC_VERSION > encrypt_from_password.log
+    # 提取加密后的密码
+    sfdc_from_password=$(extract_password encrypt_from_password.log)
+    if [ -n "$sfdc_from_password" ]; then
+        echo "SFDC FROM 密码加密成功"
+        echo "sfdc.from.password=$sfdc_from_password" >> config.properties
+    else
+        echo "警告: SFDC FROM 密码加密失败"
+        echo "日志内容:"
+        cat encrypt_from_password.log
+    fi
+    # 清理日志文件
+    rm -f encrypt_from_password.log
+else
+    echo "跳过 SFDC FROM 密码处理"
+fi
 
-echo "The output string of encrypt to password is: $encrypt_to_password"
-echo "sfdc.to.password=$encrypt_to_password" >> config.properties
+# 步骤8: 处理 TO 密码
+if ! is_empty "$SFDC_TO_PASSWORD"; then
+    echo "处理 SFDC TO 密码..."
+    # 执行加密
+    ant encrypt -Dpassword=$SFDC_TO_PASSWORD -Dapiversion=$SFDC_VERSION > encrypt_to_password.log
+    # 提取加密后的密码
+    sfdc_to_password=$(extract_password encrypt_to_password.log)
+    if [ -n "$sfdc_to_password" ]; then
+        echo "SFDC TO 密码加密成功"
+        echo "sfdc.to.password=$sfdc_to_password" >> config.properties
+    else
+        echo "警告: SFDC TO 密码加密失败"
+        echo "日志内容:"
+        cat encrypt_to_password.log
+    fi
+    # 清理日志文件
+    rm -f encrypt_to_password.log
+else
+    echo "跳过 SFDC TO 密码处理"
+fi
 
-rm -f encrypt_from_password.log
-rm -f encrypt_to_password.log
+echo "配置文件生成完成"
